@@ -105,17 +105,19 @@ det_points:
     mov eax, [rdx]
     sub eax, [rdi]
     
+    mov ebx, [r9]
+    sub ebx, [rsi]
+    
+    imul eax, ebx
+    mov esi, eax
+    
+    mov eax, [r8]
+    sub eax, [rdi]
+    
     mov ebx, [rcx]
     sub ebx, [rsi]
     
-    mov ecx, [r8]
-    sub ecx, [rdi]
-    
-    mov edx, [r9]
-    sub edx, [rsi]
-    
-    mov eax, ecx
-    imul ebx
+    imul eax, ebx
     
     sub esi, eax
     mov eax, esi
