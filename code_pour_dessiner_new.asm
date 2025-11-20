@@ -56,6 +56,13 @@ section .bss
     B_y: resd 1
     C_x: resd 1
     C_y: resd 1
+    xmin: resd 1
+    xmax: resd 1
+    ymin: resd 1
+    ymax: resd 1
+    tri_det: resd 1
+    P_x: resd 1
+    P_y: resd 1
 
 section .text
 
@@ -94,6 +101,26 @@ generate_triangle:
     mov [C_y], eax
 ret
 
+det_points:
+    mov eax, [rdx]
+    sub eax, [rdi]
+    
+    mov ebx, [rcx]
+    sub ebx, [rsi]
+    
+    mov ecx, [r8]
+    sub ecx, [rdi]
+    
+    mov edx, [r9]
+    sub edx, [rsi]
+    
+    mov eax, ecx
+    imul ebx
+    
+    sub esi, eax
+    mov eax, esi
+ret
+
 draw_triangle:
     mov rdi, [display_name]
     mov rsi, [gc]
@@ -129,6 +156,158 @@ draw_triangle:
     push qword[A_y]
     call XDrawLine
     add rsp, 8
+ret
+
+fill_triangle:
+     mov eax, [A_x]
+     mov ebx, [B_x]
+     mov ecx, [C_x]
+     
+     mov edx, eax
+     cmp ebx, edx
+     jge min_x_skip1
+     mov edx, ebx
+min_x_skip1:
+     cmp ecx, edx
+     jge min_x_done
+     mov edx, ecx
+min_x_done:
+     mov [xmin], edx
+     
+     mov edx, eax
+     cmp ebx, edx
+     jle max_x_skip1
+     mov edx, ebx
+max_x_skip1:
+     cmp ecx, edx
+     jle max_x_done
+     mov edx, ecx
+max_x_done:
+     mov [xmax], edx
+     
+     mov eax, [A_y]
+     mov ebx, [B_y]
+     mov ecx, [C_y]
+     
+     mov edx, eax
+     cmp ebx, edx
+     jge min_y_skip1
+     mov edx, ebx
+min_y_skip1:
+     cmp ecx, edx
+     jge min_y_done
+     mov edx, ecx
+min_y_done:
+     mov [ymin], edx
+     
+     mov edx, eax
+     cmp ebx, edx
+     jle max_y_skip1
+     mov edx, ebx
+max_y_skip1:
+     cmp ecx, edx
+     jle max_y_done
+     mov edx, ecx
+max_y_done:
+     mov [ymax], edx
+     
+     mov eax, [A_x]
+     sub eax, [B_x]
+     
+     mov ebx, [A_y]
+     sub ebx, [B_y]
+     
+     mov ecx, [C_x]
+     sub ecx, [B_x]
+     
+     mov edx, [C_y]
+     sub edx, [B_y]
+     
+     mov esi, eax
+     imul edx
+     mov edi, eax
+     
+     mov eax, ecx
+     imul ebx
+     sub edi, eax
+     mov [tri_det], edi
+     
+     mov esi, [ymin]
+y_loop:
+     cmp esi, [ymax]
+     jg end_fill
+     
+     mov edi, [xmin]
+x_loop:
+     cmp edi, [xmax]
+     jg next_row
+     
+     mov [P_x], edi
+     mov [P_y], esi
+     
+     mov rdi, A_x
+     mov rsi, A_y
+     mov rdx, B_x
+     mov rcx, B_y
+     mov r8, P_x
+     mov r9, P_y
+     call det_points
+     mov ebx, eax
+     
+     mov rdi, B_x
+     mov rsi, B_y
+     mov rdx, C_x
+     mov rcx, C_y
+     mov r8, P_x
+     mov r9, P_y
+     call det_points
+     mov ecx, eax
+     
+     mov rdi, C_x
+     mov rsi, C_y
+     mov rdx, A_x
+     mov rcx, A_y
+     mov r8, P_x
+     mov r9, P_y
+     call det_points
+     mov edx, eax
+     
+     mov eax, [tri_det]
+     cmp eax, 0
+     jl triangle_direct
+     jg triangle_indirect
+     jmp skip_draw
+     
+triangle_direct:
+     cmp ebx, 0
+     jle skip_draw
+     cmp ecx, 0
+     jle skip_draw
+     cmp edx, 0
+     jle skip_draw
+     jmp draw_point
+triangle_indirect:
+     cmp ebx, 0
+     jge skip_draw
+     cmp ecx, 0
+     jge skip_draw
+     cmp edx, 0
+     jge skip_draw
+     jmp draw_point
+draw_point:
+     mov rdi, [display_name]
+     mov rsi, [window]
+     mov rdx, [gc]
+     mov ecx, edi
+     mov r8d, esi
+     call XDrawPoint
+skip_draw:
+     inc edi
+     jmp x_loop
+next_row: 
+     inc esi
+     jmp y_loop
+end_fill:
 ret
 
 ;##################################################
@@ -200,6 +379,7 @@ jmp flush
 ;#########################################
 dessin:
     call generate_triangle
+    call fill_triangle
     call draw_triangle
     jmp flush
 
