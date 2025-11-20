@@ -14,7 +14,7 @@ extern XDrawPoint
 extern XFillArc
 extern XNextEvent
 
-; external functions from stdio library (ld-linux-x86-64.so.2)    
+; external functions from stdio library (ld-linux-x86-64.so.2)
 extern printf
 extern exit
 
@@ -37,26 +37,25 @@ extern exit
 
 global main
 
-section .bss
-display_name:	resq	1
-screen:		resd	1
-depth:         	resd	1
-connection:    	resd	1
-width:         	resd	1
-height:        	resd	1
-window:		resq	1
-gc:		resq	1
-
-Ax: dd 0
-Ay: dd 0
-Bx: dd 0
-By: dd 0
-Cx: dd 0
-Cy: dd 0
-
 section .data
 
 event:		times	24 dq 0
+
+section .bss
+    display_name:	resq	1
+    screen:		resd	1
+    depth:         	resd	1
+    connection:    	resd	1
+    width:         	resd	1
+    height:        	resd	1
+    window:		resq	1
+    gc:		resq	1
+    A_x: resd 1
+    A_y: resd 1
+    B_x: resd 1
+    B_y: resd 1
+    C_x: resd 1
+    C_y: resd 1
 
 section .text
 
@@ -72,27 +71,27 @@ ret
 generate_triangle:
     mov edi, SCREEN_W
     call random_int
-    mov [Ax], eax
+    mov [A_x], eax
 
     mov edi, SCREEN_H
     call random_int
-    mov [Ay], eax
+    mov [A_y], eax
 
     mov edi, SCREEN_W
     call random_int
-    mov [Bx], eax
+    mov [B_x], eax
 
     mov edi, SCREEN_H
     call random_int
-    mov [By], eax
+    mov [B_y], eax
 
     mov edi, SCREEN_W
     call random_int
-    mov [Cx], eax
+    mov [C_x], eax
 
     mov edi, SCREEN_H
     call random_int
-    mov [Cy], eax
+    mov [C_y], eax
 ret
 
 draw_triangle:
@@ -104,30 +103,30 @@ draw_triangle:
     mov rdi, [display_name]
     mov rsi, [window]
     mov rdx, [gc]
-    mov ecx, [Ax]
-    mov r8d, [Ay]
-    mov r9d, [Bx]
-    push dword[By]
+    mov ecx, [A_x]
+    mov r8d, [A_y]
+    mov r9d, [B_x]
+    push qword[B_y]
     call XDrawLine
     add rsp, 8
 
     mov rdi, [display_name]
     mov rsi, [window]
     mov rdx, [gc]
-    mov ecx, [Bx]
-    mov r8d, [By]
-    mov r9d, [Cx]
-    push dword[Cy]
+    mov ecx, [B_x]
+    mov r8d, [B_y]
+    mov r9d, [C_x]
+    push qword[C_y]
     call XDrawLine
     add rsp, 8
 
     mov rdi, [display_name]
     mov rsi, [window]
     mov rdx, [gc]
-    mov ecx, [Cx]
-    mov r8d, [Cy]
-    mov r9d, [Ax]
-    push dword[Ay]
+    mov ecx, [C_x]
+    mov r8d, [C_y]
+    mov r9d, [A_x]
+    push qword[A_y]
     call XDrawLine
     add rsp, 8
 ret
