@@ -105,8 +105,8 @@ det_points:
     mov eax, [rdx]
     sub eax, [rdi]
     
-    mov ebx, [r9]
-    sub ebx, [rsi]
+    mov edx, [r9]
+    sub edx, [rsi]
     
     imul eax, ebx
     mov esi, eax
@@ -114,10 +114,10 @@ det_points:
     mov eax, [r8]
     sub eax, [rdi]
     
-    mov ebx, [rcx]
-    sub ebx, [rsi]
+    mov edx, [rcx]
+    sub edx, [rsi]
     
-    imul eax, ebx
+    imul eax, edx
     
     sub esi, eax
     mov eax, esi
@@ -213,26 +213,14 @@ max_y_skip1:
 max_y_done:
      mov [ymax], edx
      
-     mov eax, [A_x]
-     sub eax, [B_x]
-     
-     mov ebx, [A_y]
-     sub ebx, [B_y]
-     
-     mov ecx, [C_x]
-     sub ecx, [B_x]
-     
-     mov edx, [C_y]
-     sub edx, [B_y]
-     
-     mov esi, eax
-     imul edx
-     mov edi, eax
-     
-     mov eax, ecx
-     imul ebx
-     sub edi, eax
-     mov [tri_det], edi
+     mov rdi, A_x
+     mov rsi, A_y
+     mov rdx, B_x
+     mov rcx, B_y
+     mov r8, C_x
+     mov r9, C_y
+     call det_points
+     mov [tri_det], eax
      
      mov esi, [ymin]
 y_loop:
@@ -297,11 +285,12 @@ triangle_indirect:
      jge skip_draw
      jmp draw_point
 draw_point:
+     mov ecx, edi
+     mov r8d, esi
+     
      mov rdi, [display_name]
      mov rsi, [window]
      mov rdx, [gc]
-     mov ecx, edi
-     mov r8d, esi
      call XDrawPoint
 skip_draw:
      inc edi
