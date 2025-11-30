@@ -65,6 +65,7 @@ direct:		resb	1
 AB_vec:		resq	2
 BC_vec:		resq	2
 CA_vec:		resq	2
+nb_tr:		resq	1
 
 section .data
 
@@ -101,6 +102,35 @@ alea_h:
 	mov rcx, HAUTEUR
 	div rcx
 	mov rax, rdx
+ret
+
+couleur_aleatoire:
+     retry_color:
+	rdrand rax
+	jnc retry_color
+
+	xor rdx, rdx
+	mov rcx, 0x00FFFFFF
+	div rcx
+	mov edx, edx
+
+	mov rdi, [display_name]
+	mov rsi, [gc]
+	call XSetForeground
+ret
+
+nb_triangles_alea:
+    retry_nb:
+	rdrand rax
+	jnc retry_nb
+
+	xor rdx rdx
+	mov rcx, 10
+	div rcx
+
+	mov rax, rdx
+	inc rax
+	mov [nb_tr], rax
 ret
 
 generer_triangle:
@@ -233,10 +263,10 @@ sens_triangle:
     sub rax, r14
 
     cmp rax, 0
-    jl direct
+    jl .direct
     mov byte[direct], 0
     ret
-direct:
+.direct:
     mov byte[direct], 1
     ret
 
@@ -428,7 +458,7 @@ main:
     mov qword[gc], rax           ; Stocke le GC dans la variable gc
 
     mov rdi, qword[display_name]
-    mov rsi qword[gc]
+    mov rsi, qword[gc]
     mov edx, 0x00FFFFFF
     call XSetForeground
 	
@@ -452,11 +482,20 @@ boucle: ; Boucle de gestion des événements
 ;#########################################
 
 dessin:
+    call nb_triangles_alea
+    mov rcx, [nb_tr]
+
+boucle_triangles:
+    call couleur_aleatoire
     call generer_triangle
     call triangle_vecteurs
     call rectangle_calculer
     call sens_triangle
     call remplissage
+
+    dec rbx
+    cmp rbx, 0
+    jg boucle_triangles
     jmp flush
 
 ; ############################
