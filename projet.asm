@@ -426,6 +426,11 @@ main:
     test rax, rax                ; Vérifie la création du GC
     jz closeDisplay              ; Si échec, quitte
     mov qword[gc], rax           ; Stocke le GC dans la variable gc
+
+    mov rdi, qword[display_name]
+    mov rsi qword[gc]
+    mov edx, 0x00FFFFFF
+    call XSetForeground
 	
 boucle: ; Boucle de gestion des événements
     mov     rdi, qword[display_name]
