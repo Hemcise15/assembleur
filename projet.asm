@@ -37,6 +37,8 @@ extern exit
 global main
 global alea_h
 global alea_l
+global couleur_aleatoire
+global nb_triangles_alea
 global generer_triangle
 global triangle_vecteurs
 global rectangle_calculer
@@ -124,7 +126,7 @@ nb_triangles_alea:
 	rdrand rax
 	jnc retry_nb
 
-	xor rdx rdx
+	xor rdx, rdx
 	mov rcx, 10
 	div rcx
 
