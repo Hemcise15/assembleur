@@ -31,11 +31,20 @@ extern exit
 %define WORD	2
 %define BYTE	1
 %define NBTRI	1
-%define BYTE	1
 %define	LARGEUR 400	; largeur en pixels de la fenêtre
 %define HAUTEUR 400	; hauteur en pixels de la fenêtre
 
 global main
+global alea_h
+global alea_l
+global generer_triangle
+global triangle_vecteurs
+global rectangle_calculer
+global sens_triangle
+global remplissage
+global det_AB
+global det_BC
+global det_CA
 
 section .bss
 display_name:	resq	1
@@ -46,6 +55,16 @@ width:         	resd	1
 height:        	resd	1
 window:		resq	1
 gc:		resq	1
+
+triangle_A:	resq 	2
+triangle_B:	resq	2
+triangle_C:	resq	2
+rectangle:	resq	4
+point:		resq	2
+direct:		resb	1
+AB_vec:		resq	2
+BC_vec:		resq	2
+CA_vec:		resq	2
 
 section .data
 
@@ -61,6 +80,284 @@ section .text
 ;##################################################
 ;########### PROGRAMME PRINCIPAL ##################
 ;##################################################
+
+alea_l:
+    retry_l:
+        rdrand rax
+	jnc retry_l
+
+	xor rdx, rdx
+	mov rcx, LARGEUR
+	div rcx
+	mov rax, rdx
+ret
+
+alea_h:
+    retry_h:
+	rdrand rax
+	jnc retry_h
+
+	xor rdx, rdx
+	mov rcx, HAUTEUR
+	div rcx
+	mov rax, rdx
+ret
+
+generer_triangle:
+    call alea_l
+    mov [triangle_A], rax
+    call alea_h
+    mov [triangle_A+QWORD], rax
+
+    call alea_l
+    mov [triangle_B], rax
+    call alea_h
+    mov [triangle_B+QWORD], rax
+
+    call alea_l
+    mov [triangle_C], rax
+    call alea_h
+    mov [triangle_C+QWORD], rax
+ret
+
+triangle_vecteurs:
+    mov rax, [triangle_A]
+    mov rbx, [triangle_A+QWORD]
+
+    mov rcx, [triangle_B]
+    mov rdx, [triangle_B+QWORD]
+
+    mov r8, [triangle_C]
+    mov r9, [triangle_C+QWORD]
+
+    mov r10, rcx
+    sub r10, rax
+    mov [AB_vec], r10
+    mov r11, rdx
+    sub r11, rbx
+    mov [AB_vec+QWORD], r11
+
+    mov r10, r8
+    sub r10, rcx
+    mov [BC_vec], r10
+    mov r11, r9
+    sub r11, rdx
+    mov [BC_vec+QWORD], r11
+
+    mov r10, rax
+    sub r10, r8
+    mov [CA_vec], r10
+    mov r11, rbx
+    sub r11, r9
+    mov [CA_vec+QWORD], r11
+ret
+
+rectangle_calculer:
+    mov rax, [triangle_A]
+    mov rbx, [triangle_B]
+    mov rcx, [triangle_C]
+
+    mov rdx, rax
+    cmp rbx, rdx
+    jge xmin_notB
+    mov rdx, rbx
+xmin_notB:
+    cmp rcx, rdx
+    jge xmin_notC
+    mov rdx, rcx
+xmin_notC:
+    mov [rectangle], rdx
+
+    mov rdx, rax
+    cmp rbx, rdx
+    jle xmax_notB
+    mov rdx, rbx
+xmax_notB:
+    cmp rcx, rdx
+    jle xmax_notC
+    mov rdx, rcx
+xmax_notC:
+    mov [rectangle+QWORD], rdx
+
+    mov rax, [triangle_A+QWORD]
+    mov rbx, [triangle_B+QWORD]
+    mov rcx, [triangle_C+QWORD]
+
+    mov rdx, rax
+    cmp rbx, rdx
+    jge ymin_notB
+    mov rdx, rbx
+ymin_notB:
+    cmp rcx, rdx
+    jge ymin_notC
+    mov rdx, rcx
+ymin_notC:
+    mov [rectangle+QWORD*2], rdx
+
+    mov rdx, rax
+    cmp rbx, rdx
+    jle ymax_notB
+    mov rdx, rbx
+ymax_notB:
+    cmp rcx, rdx
+    jle ymax_notC
+    mov rdx, rcx
+ymax_notC:
+    mov [rectangle+QWORD*3], rdx
+ret
+
+sens_triangle:
+    mov rax, [triangle_A]
+    mov rbx, [triangle_A+QWORD]
+
+    mov rcx, [triangle_B]
+    mov rdx, [triangle_B+QWORD]
+
+    mov r8, [triangle_C]
+    mov r9, [triangle_C+QWORD]
+
+    mov r10, rax
+    sub r10, rcx
+    mov r11, rbx
+    sub r11, rdx
+
+    mov r12, r8
+    sub r12, rcx
+    mov r13, r9
+    sub r13, rdx
+
+    mov rax, r10
+    imul rax, r13
+    mov r14, r12
+    imul r14, r11
+    sub rax, r14
+
+    cmp rax, 0
+    jl direct
+    mov byte[direct], 0
+    ret
+direct:
+    mov byte[direct], 1
+    ret
+
+det_AB:
+    mov rax, [triangle_A]
+    mov rbx, [triangle_A+QWORD]
+    mov rcx, [point]
+    mov rdx, [point+QWORD]
+
+    sub rcx, rax
+    sub rdx, rbx
+
+    mov r8, [AB_vec]
+    mov r9, [AB_vec+QWORD]
+
+    mov rax, r8
+    imul rax, rdx
+    mov r10, rcx
+    imul r10, r9
+    sub rax, r10
+ret
+
+det_BC:
+    mov rax, [triangle_B]
+    mov rbx, [triangle_B+QWORD]
+    mov rcx, [point]
+    mov rdx, [point+QWORD]
+
+    sub rcx, rax
+    sub rdx, rbx
+
+    mov r8, [BC_vec]
+    mov r9, [BC_vec+QWORD]
+
+    mov rax, r8
+    imul rax, rdx
+    mov r10, rcx
+    imul r10, r9
+    sub rax, r10
+ret
+
+det_CA:
+    mov rax, [triangle_C]
+    mov rbx, [triangle_C+QWORD]
+    mov rcx, [point]
+    mov rdx, [point+QWORD]
+
+    sub rcx, rax
+    sub rdx, rbx
+
+    mov r8, [CA_vec]
+    mov r9, [CA_vec+QWORD]
+
+    mov rax, r8
+    imul rax, rdx
+    mov r10, rcx
+    imul r10, r9
+    sub rax, r10
+ret
+
+remplissage:
+    mov r15, [rectangle+QWORD*2]
+    mov r13, [rectangle+QWORD*3]
+
+boucle_y:
+    cmp r15, r13
+    jg fin_y
+    mov r14, [rectangle]
+    mov r12, [rectangle+QWORD]
+
+boucle_x:
+    cmp r14, r12
+    jg fin_x
+    mov [point], r14
+    mov [point+QWORD], r15
+    cmp byte[direct], 1
+    je test_direct
+    jmp test_indirect
+
+test_direct:
+    call det_AB
+    cmp rax, 0
+    jl not_in
+    call det_BC
+    cmp rax, 0
+    jl not_in
+    call det_CA
+    cmp rax, 0
+    jl not_in
+    jmp in
+
+test_indirect:
+    call det_AB
+    cmp rax, 0
+    jg not_in
+    call det_BC
+    cmp rax, 0
+    jg not_in
+    call det_CA
+    cmp rax, 0
+    jg not_in
+    jmp in
+
+in:
+    mov rdi, qword[display_name]
+    mov rsi, qword[window]
+    mov rdx, qword[gc]
+    mov ecx, dword[point]
+    mov r8d, dword[point+QWORD]
+    call XDrawPoint
+    jmp after
+
+not_in:
+after:
+    inc r14
+    jmp boucle_x
+fin_x:
+    inc r15
+    jmp boucle_y
+fin_y:
+    ret
 
 main:
     ; Sauvegarde du registre de base pour préparer les appels à printf
@@ -148,105 +445,18 @@ boucle: ; Boucle de gestion des événements
 ;#########################################
 ;#	DEBUT DE LA ZONE DE DESSIN	 #
 ;#########################################
+
 dessin:
-
-; Changer la couleur de dessin
-	mov rdi,qword[display_name]
-	mov rsi,qword[gc]
-	mov edx,0x00FFFF	; Couleur du crayon
-	call XSetForeground
-; Fin Change la couleur de dessin
-
-	mov dword[x1],200
-	mov dword[y1],100
-; Dessin d'un point	
-	mov rdi,qword[display_name]
-	mov rsi,qword[window]
-	mov rdx,qword[gc]
-	mov ecx,dword[x1]	; coordonnée en x
-	mov r8d,dword[y1]	; coordonnée en y
-	call XDrawPoint
-; Fin Dessin d'un point
-
-; Changer la couleur de dessin
-	mov rdi,qword[display_name]
-	mov rsi,qword[gc]
-	mov edx,0xFF00FF	; Couleur du crayon (violet)
-	call XSetForeground
-; Fin Change la couleur de dessin
-
-	mov dword[x1],100
-	mov dword[y1],100
-	mov dword[x2],200
-	mov dword[y2],150
-; Dessin d'une ligne
-	mov rdi,qword[display_name]
-	mov rsi,qword[window]
-	mov rdx,qword[gc]
-	mov ecx,dword[x1]	; coordonnée source en x
-	mov r8d,dword[y1]	; coordonnée source en y
-	mov r9d,dword[x2]	; coordonnée destination en x
-	mov r14d,dword[y2]
-	push r14		; coordonnée destination en y
-	call XDrawLine
-	add rsp,8
-; Fin Dessin d'une ligne
-
-; Changer la couleur de dessin
-	mov rdi,qword[display_name]
-	mov rsi,qword[gc]
-	mov edx,0xFFFF00	; Couleur du crayon (jaune)
-	call XSetForeground
-; Fin Change la couleur de dessin
-
-	mov dword[x1],200
-	mov dword[y1],200
-	mov dword[x2],50
-	mov dword[y2],250
-; Dessin d'une ligne
-	mov rdi,qword[display_name]
-	mov rsi,qword[window]
-	mov rdx,qword[gc]
-	mov ecx,dword[x1]	; coordonnée source en x
-	mov r8d,dword[y1]	; coordonnée source en y
-	mov r9d,dword[x2]	; coordonnée destination en x
-	mov r14d,dword[y2]
-	push r14		; coordonnée destination en y
-	call XDrawLine
-	add rsp,8
-; Fin Dessin d'une ligne
-
-; Changer la couleur de dessin
-	mov rdi,qword[display_name]
-	mov rsi,qword[gc]
-	mov edx,0x00FFFF	; Couleur du crayon (cyan)
-	call XSetForeground
-; Fin Change la couleur de dessin
-
-	mov dword[x1],250
-	mov dword[y1],50
-	mov dword[x2],150
-	mov dword[y2],250
-; Dessin d'une ligne
-	mov rdi,qword[display_name]
-	mov rsi,qword[window]
-	mov rdx,qword[gc]
-	mov ecx,dword[x1]	; coordonnée source en x
-	mov r8d,dword[y1]	; coordonnée source en y
-	mov r9d,dword[x2]	; coordonnée destination en x
-	mov r14d,dword[y2]
-	push r14		; coordonnée destination en y
-	call XDrawLine
-	add rsp,8
-; Fin Dessin d'une ligne
-dessin2:
-
-
+    call generer_triangle
+    call triangle_vecteurs
+    call rectangle_calculer
+    call sens_triangle
+    call remplissage
+    jmp flush
 
 ; ############################
 ; # FIN DE LA ZONE DE DESSIN #
 ; ############################
-jmp flush
 
 flush:
 mov rdi,qword[display_name]
