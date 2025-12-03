@@ -30,15 +30,13 @@ extern exit
 %define DWORD	4
 %define WORD	2
 %define BYTE	1
-%define NBTRI	1
+%define NBTRI	5
 %define	LARGEUR 400	; largeur en pixels de la fenêtre
 %define HAUTEUR 400	; hauteur en pixels de la fenêtre
 
 global main
 global alea_h
 global alea_l
-global couleur_aleatoire
-global nb_triangles_alea
 global generer_triangle
 global triangle_vecteurs
 global rectangle_calculer
@@ -72,7 +70,7 @@ nb_tr:		resq	1
 section .data
 
 event:		times	24 dq 0
-
+passe: db 0
 x1:	dd	0
 x2:	dd	0
 y1:	dd	0
@@ -472,20 +470,25 @@ boucle: ; Boucle de gestion des événements
     call    XNextEvent          ; Attend et récupère le prochain événement
 
     cmp     dword[event], ConfigureNotify ; Si l'événement est ConfigureNotify (ex: redimensionnement)
-    je      dessin                        ; Passe à la phase de dessin
+    je      dessine                       ; Passe à la phase de dessin
 
     cmp     dword[event], KeyPress        ; Si une touche est pressée
     je      closeDisplay                  ; Quitte le programme
     jmp     boucle                        ; Sinon, recommence la boucle
 
-
+dessine:
+    cmp byte[passe], 0
+    je dessin
+    jmp boucle
+    
 ;#########################################
 ;#	DEBUT DE LA ZONE DE DESSIN	 #
 ;#########################################
 
 dessin:
     call nb_triangles_alea
-    mov rcx, [nb_tr]
+    ;mov rcx, [nb_tr]
+    ;mov qword[nb_tr], 5
 
 boucle_triangles:
     call couleur_aleatoire
@@ -495,9 +498,10 @@ boucle_triangles:
     call sens_triangle
     call remplissage
 
-    dec rbx
-    cmp rbx, 0
+    dec qword[nb_tr]
+    cmp qword[nb_tr], 0
     jg boucle_triangles
+    inc byte[passe]
     jmp flush
 
 ; ############################
