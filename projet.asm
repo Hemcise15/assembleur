@@ -15,6 +15,9 @@ extern XDrawArc
 extern XFillArc
 extern XNextEvent
 
+extern printf
+extern scanf
+
 extern exit
 
 %define	StructureNotifyMask	131072
@@ -66,6 +69,7 @@ AB_vec:		resq	2
 BC_vec:		resq	2
 CA_vec:		resq	2
 nb_tr:		resq	1
+alea:       resb    1
 
 section .data
 
@@ -75,6 +79,10 @@ x1:	dd	0
 x2:	dd	0
 y1:	dd	0
 y2:	dd	0
+fmt_printf: db "%d", 10, 0
+fmt_alea: db "Veux-tu un nombre aléatoire de triangles 1 oui 0 non : ", 0
+fmt_alea_nb: db "%hhd", 0
+fmt_nb_tr: db "%d", 0
 
 section .text
 	
@@ -125,7 +133,7 @@ nb_triangles_alea:
 	jnc retry_nb
 
 	xor rdx, rdx
-	mov rcx, 10
+	mov rcx, 200
 	div rcx
 
 	mov rax, rdx
@@ -390,6 +398,40 @@ fin_y:
     ret
 
 main:
+    push rbp
+    mov rdi, fmt_alea
+    mov rax, 0
+    call printf
+    mov rax, 60
+    mov rdi, 0
+    
+    mov rdi, fmt_alea_nb
+    mov rsi, alea
+    mov rax, 0
+    call scanf
+
+    mov rax, 60
+    mov rdi, 0
+    pop rbp
+    
+    cmp byte[alea], 1
+    je alea_appel
+    
+precis:
+    push rbp
+    mov rdi, fmt_nb_tr
+    mov rsi, nb_tr
+    mov rax, 0
+    call scanf
+    pop rbp
+    mov rax, 60
+    mov rdi, 0
+    jmp etc
+
+alea_appel:
+    call nb_triangles_alea
+
+etc:
     ; Sauvegarde du registre de base pour préparer les appels à printf
     push    rbp
     mov     rbp, rsp
@@ -486,7 +528,14 @@ dessine:
 ;#########################################
 
 dessin:
-    call nb_triangles_alea
+    push rbp
+    mov rdi, fmt_printf
+    mov rsi, qword[nb_tr]
+    mov rax, 0
+    call printf
+    pop rbp
+    mov rax, 60
+    mov rdi, 0
     ;mov rcx, [nb_tr]
     ;mov qword[nb_tr], 5
 
